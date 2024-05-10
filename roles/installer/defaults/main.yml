@@ -13,6 +13,7 @@ ingress_class_name: ''
 ingress_path: '/'
 ingress_path_type: 'Prefix'
 ingress_api_version: 'networking.k8s.io/v1'
+api_urlpattern_prefix: ''
 # Add annotations to the service account. Specify as literal block. E.g.:
 # service_account_annotations: |
 #   eks.amazonaws.com/role-arn: arn:aws:iam::<ACCOUNT_ID>:role/<IAM_ROLE_NAME>
@@ -296,6 +297,11 @@ replicas: 1
 web_replicas: ''
 task_replicas: ''
 
+web_liveness_period: 0
+web_readiness_period: 0
+task_liveness_period: 0
+task_readiness_period: 0
+
 task_args:
   - /usr/bin/launch_awx_task.sh
 task_command: []
@@ -395,10 +401,7 @@ postgres_resource_requirements:
   requests:
     cpu: 10m
     memory: 64Mi
-postgres_init_container_resource_requirements:
-  requests:
-    cpu: 10m
-    memory: 64Mi
+
 # Assign a preexisting priority class to the postgres pod
 postgres_priority_class: ''
 
@@ -411,6 +414,11 @@ projects_existing_claim: ''
 #
 # Define postgres configuration arguments to use
 postgres_extra_args: ''
+
+postgres_data_volume_init: false
+postgres_init_container_commands: |
+  chown 26:0 /var/lib/pgsql/data
+  chmod 700 /var/lib/pgsql/data
 
 # Configure postgres connection keepalive
 postgres_keepalives: true
@@ -487,9 +495,11 @@ nginx_listen_queue_size: "{{ uwsgi_listen_queue_size }}"
 # metrics-utility (github.com/ansible/metrics-utility)
 _metrics_utility_enabled: "{{ metrics_utility_enabled | default(false) }}"
 _metrics_utility_configmap: "{{ metrics_utility_configmap | default(deployment_type + '-metrics-utility-configmap') }}"
+_metrics_utility_console_enabled: "{{ metrics_utility_console_enabled | default(false) }}"
 _metrics_utility_image: "{{ metrics_utility_image | default(_image) }}"
 _metrics_utility_image_version: "{{ metrics_utility_image_version | default(_image_version) }}"
 _metrics_utility_image_pull_policy: "{{ metrics_utility_image_pull_policy | default('IfNotPresent') }}"
+_metrics_utility_ship_target: "{{ metrics_utility_ship_target | default('directory') }}"
 _metrics_utility_pvc_claim: "{{ metrics_utility_pvc_claim | default(deployment_type + '-metrics-utility') }}"
 _metrics_utility_pvc_claim_size: "{{ metrics_utility_pvc_claim_size | default('5Gi') }}"
 _metrics_utility_cronjob_gather_schedule: "{{ metrics_utility_cronjob_gather_schedule | default('@hourly') }}"
